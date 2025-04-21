@@ -1,64 +1,134 @@
-"use client";
+"use client"; // クライアント側で実行するために必要（useStateなどを使うため）
+
 import { useState } from "react";
 
-// ダミーデータ（仮の小説リスト）
-const dummyNovels = [
-  { id: 1, title: "異世界転生した俺が最強だった件" },
-  { id: 2, title: "現実世界で魔法を使う方法" },
-  { id: 3, title: "恋と魔法と高校生活" },
-  { id: 4, title: "異世界ファンタジー冒険記" },
-  { id: 5, title: "サイバーパンク東京2025" },
-];
+export default function SummarySharePage() {
+  // 投稿された要約リストを保持する状態
+  const [summaries, setSummaries] = useState([]);
 
-export default function Home() {
-  const [keyword, setKeyword] = useState("");
-  const [results, setResults] = useState([]);
+  // フォーム入力値（話数・投稿者名・要約テキスト）
+  const [startChapter, setStartChapter] = useState("");
+  const [endChapter, setEndChapter] = useState("");
+  const [userName, setUserName] = useState("");
+  const [summaryText, setSummaryText] = useState("");
 
-  const handleSearch = () => {
-    const filtered = dummyNovels.filter((novel) =>
-      novel.title.includes(keyword)
-    );
-    setResults(filtered);
+  // フォームが送信されたときの処理
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    // 新しい投稿オブジェクトを作成
+    const newSummary = {
+      id: Date.now(), // 一意のID（タイムスタンプ）
+      start: startChapter,
+      end: endChapter,
+      user: userName,
+      text: summaryText,
+    };
+
+    // 投稿をリストに追加（最新を上に）
+    setSummaries([newSummary, ...summaries]);
+
+    // 入力欄をリセット
+    setStartChapter("");
+    setEndChapter("");
+    setUserName("");
+    setSummaryText("");
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-gray-50 py-10 px-4">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">
-        小説検索フォーム
-      </h1>
-      <div className="flex w-full max-w-2xl border border-gray-300 rounded overflow-hidden shadow bg-white mb-6">
-        <input
-          type="text"
-          className="flex-1 px-4 py-3 text-lg focus:outline-none"
-          placeholder="キーワードを入力（例：異世界）"
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-        />
-        <button
-          onClick={handleSearch}
-          className="bg-blue-500 hover:bg-blue-600 text-white px-6 text-lg font-semibold"
-        >
-          検索
-        </button>
-      </div>
+    <main className="max-w-2xl mx-auto p-6">
+      {/* ページタイトル */}
+      <h1 className="text-2xl font-bold mb-4">📚 小説要約共有ページ</h1>
+      <p className="text-gray-700 mb-6">
+        仮の小説タイトル：<strong>冥王様が通るのですよ！</strong>
+      </p>
 
-      {/* 検索結果表示 */}
-      <div className="w-full max-w-2xl">
-        {results.length === 0 ? (
-          <p className="text-gray-500 text-center">検索結果がありません</p>
+      {/* 要約投稿フォーム */}
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4 bg-gray-50 p-4 rounded shadow"
+      >
+        {/* 話数範囲入力 */}
+        <div>
+          <label className="block text-sm font-medium">
+            範囲（何話〜何話）
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="number"
+              placeholder="開始話"
+              className="border p-2 rounded w-1/2"
+              value={startChapter}
+              onChange={(e) => setStartChapter(e.target.value)}
+              required
+            />
+            <input
+              type="number"
+              placeholder="終了話"
+              className="border p-2 rounded w-1/2"
+              value={endChapter}
+              onChange={(e) => setEndChapter(e.target.value)}
+              required
+            />
+          </div>
+        </div>
+
+        {/* 投稿者名入力 */}
+        <div>
+          <label className="block text-sm font-medium">投稿者名</label>
+          <input
+            type="text"
+            className="border p-2 rounded w-full"
+            placeholder="例：ミキ"
+            value={userName}
+            onChange={(e) => setUserName(e.target.value)}
+            required
+          />
+        </div>
+
+        {/* 要約テキスト入力 */}
+        <div>
+          <label className="block text-sm font-medium">要約テキスト</label>
+          <textarea
+            rows="4"
+            className="border p-2 rounded w-full"
+            placeholder="本文の要約を書いてください..."
+            value={summaryText}
+            onChange={(e) => setSummaryText(e.target.value)}
+            required
+          />
+        </div>
+
+        {/* 投稿ボタン */}
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          投稿する
+        </button>
+      </form>
+
+      {/* 投稿された要約の一覧 */}
+      <section className="mt-8">
+        <h2 className="text-xl font-semibold mb-2">📝 投稿された要約</h2>
+        {summaries.length === 0 ? (
+          <p className="text-gray-500">まだ投稿はありません。</p>
         ) : (
-          <ul className="space-y-2">
-            {results.map((novel) => (
+          <ul className="space-y-4">
+            {summaries.map((summary) => (
               <li
-                key={novel.id}
-                className="bg-white shadow-sm rounded p-4 border border-gray-200"
+                key={summary.id}
+                className="border rounded p-4 bg-white shadow"
               >
-                📘 {novel.title}
+                <div className="text-sm text-gray-600 mb-1">
+                  第{summary.start}話〜{summary.end}話・投稿者：{summary.user}
+                </div>
+                <div>{summary.text}</div>
               </li>
             ))}
           </ul>
         )}
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }
