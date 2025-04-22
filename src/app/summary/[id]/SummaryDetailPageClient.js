@@ -88,6 +88,19 @@ export default function SummaryDetailPageClient({ novelId }) {
         </ul>
       )}
 
+      {/* 🤖 AI感想生成ボタン（仮） */}
+      <div className="mb-6">
+        <button
+          onClick={() => {
+            console.log("AIに感想を生成させます！（※ 今はまだダミー）");
+            alert("🤖 AIが感想を考え中...（※ これは仮の動作）");
+          }}
+          className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+        >
+          🤖 AIに感想を生成してもらう（仮）
+        </button>
+      </div>
+
       <h2 className="text-xl font-semibold mb-2">✍️ 新しい要約を投稿</h2>
       <form
         onSubmit={handleSubmit}
