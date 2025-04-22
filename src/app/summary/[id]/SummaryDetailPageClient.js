@@ -5,7 +5,7 @@ import { useState } from "react";
 export default function SummaryDetailPageClient({ novelId }) {
   const dummyData = [
     {
-      id: "2",
+      id: "1",
       title: "異世界でスローライフ",
       summaries: [
         {
@@ -15,6 +15,23 @@ export default function SummaryDetailPageClient({ novelId }) {
           text: "農業をしながらのんびり暮らす物語の始まり。",
         },
       ],
+    },
+    {
+      id: "2",
+      title: "ダークエルフの王女は働きたくない",
+      summaries: [
+        {
+          start: 1,
+          end: 2,
+          user: "カナメ",
+          text: "怠けたい王女が世界征服を企む（？）ゆるコメディ。",
+        },
+      ],
+    },
+    {
+      id: "3",
+      title: "AIが支配する世界で猫になった話",
+      summaries: [],
     },
   ];
 
