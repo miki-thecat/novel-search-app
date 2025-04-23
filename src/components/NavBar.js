@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 
-export default function NavBar({ onSearch }) {
+export default function NavBar({ onSiteChange, onSearch }) {
   const [keyword, setKeyword] = useState("");
 
   return (
@@ -12,7 +12,7 @@ export default function NavBar({ onSearch }) {
           <a href="/">novel-search-app</a>
         </h1>
 
-        {/* 🔍 検索フォーム */}
+        {/* 🔍 右上検索フォーム */}
         <form
           className="flex gap-2"
           onSubmit={(e) => {
@@ -31,6 +31,7 @@ export default function NavBar({ onSearch }) {
             type="submit"
             className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
           >
+            {" "}
             🔍
           </button>
         </form>
