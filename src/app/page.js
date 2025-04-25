@@ -13,10 +13,10 @@ export default function HomePage() {
     if (!kw.trim()) return;
     setIsLoading(true);
     try {
-      // 👇 変更点：外部APIではなく、自作APIにリクエスト！
-      const res = await fetch(`../api/search?word=${encodeURIComponent(kw)}`);
+      // 👇 自作APIを使って検索
+      const res = await fetch(`/api/search?word=${encodeURIComponent(kw)}`);
       const data = await res.json();
-      setResults(data.slice(1)); // 先頭にAPI情報があるので省く
+      setResults(data.slice(1)); // 先頭のAPI仕様情報を除外
     } catch (err) {
       console.error("検索失敗:", err);
       setResults([]);
@@ -56,17 +56,17 @@ export default function HomePage() {
                   key={novel.ncode}
                   className="bg-gray-100 p-4 rounded shadow"
                 >
-                  <h3 className="font-bold">{novel.title}</h3>
+                  <h3 className="font-bold">
+                    <Link
+                      href={`/summary/${novel.ncode}`}
+                      className="text-blue-600 underline text-sm"
+                    >
+                      {novel.title}
+                    </Link>
+                  </h3>
                   <p className="text-sm text-gray-700 line-clamp-2">
                     {novel.story}
                   </p>
-                  <a
-                    href={`https://ncode.syosetu.com/${novel.ncode}/`}
-                    target="_blank"
-                    className="text-blue-600 underline text-sm"
-                  >
-                    公式ページへ →
-                  </a>
                 </li>
               ))}
             </ul>
@@ -82,12 +82,11 @@ export default function HomePage() {
             <li key={item.rank} className="bg-white border p-3 rounded shadow">
               <span className="font-bold">#{item.rank}</span>：
               <Link
-                href={`https://ncode.syosetu.com/${item.ncode}`}
-                target="_blank"
+                href={`/summary/${item.ncode}`}
                 className="text-blue-600 underline ml-2"
               >
-                {item.ncode}
-              </Link>{" "}
+                {item.title}
+              </Link>
               <span className="text-sm text-gray-500">（{item.pt}pt）</span>
             </li>
           ))}
