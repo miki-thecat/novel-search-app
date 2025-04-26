@@ -15,13 +15,56 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const genre = searchParams.get("genre") || ""; // なければ空文字（総合）
 
+    // 🔥 genre一覧を限定（エラー防止）
+    const validGenres = [
+      "", // 総合
+      "gf", // ファンタジー
+      "gr", // 恋愛
+      "gsf", // SF
+      "gmod", // 現代
+      "gho", // ホラー
+    ];
+    if (!validGenres.includes(genre)) {
+      return new Response(JSON.stringify({ error: "無効なジャンルです" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     // 🔗 ランキングデータ取得（ジャンル付き）
     const rtype = `${dateStr}${genre ? `-${genre}` : ""}-w`;
     const res = await fetch(
       `https://api.syosetu.com/rank/rankget/?rtype=${rtype}&out=json`
     );
+
+    // 🔥 ステータスコードチェック
+    if (!res.ok) {
+      console.error("ランキングAPIエラー:", res.status);
+      return new Response(JSON.stringify({ error: "ランキング取得失敗" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // 🔥 Content-Typeチェック（JSON以外ならエラー）
+    const contentType = res.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      console.error("ランキングAPIのレスポンスがJSONじゃない");
+      return new Response(JSON.stringify({ error: "JSON以外のデータ" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const rankingData = await res.json();
     const top10 = rankingData.slice(0, 10);
+
+    if (top10.length === 0) {
+      return new Response(JSON.stringify([]), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     // 🔍 ncode をハイフン区切りで一括取得用に変換
     const ncodes = top10.map((item) => item.ncode).join("-");
@@ -30,6 +73,15 @@ export async function GET(req) {
     const novelRes = await fetch(
       `https://api.syosetu.com/novelapi/api/?out=json&ncode=${ncodes}`
     );
+
+    if (!novelRes.ok) {
+      console.error("小説詳細APIエラー:", novelRes.status);
+      return new Response(JSON.stringify({ error: "小説情報取得失敗" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const novelData = await novelRes.json();
     const novels = novelData.slice(1); // 先頭はAPI仕様情報
 
