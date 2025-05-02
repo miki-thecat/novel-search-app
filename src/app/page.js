@@ -1,47 +1,15 @@
+// ✅ page.js（ジャンル切替＋ページネーション＋あらすじ表示＋URL確認）
 "use client";
 import { useEffect, useState } from "react";
-import NavBar from "../components/NavBar.js";
 import Link from "next/link";
 
 export default function HomePage() {
   const [ranking, setRanking] = useState([]);
-  const [results, setResults] = useState([]);
+  const [allcount, setAllcount] = useState(0);
+  const [genre, setGenre] = useState("");
+  const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [genre, setGenre] = useState(""); // ← 🔥ジャンル選択用の状態を追加
 
-  // 🔍 検索実行
-  const handleSearch = async (kw) => {
-    if (!kw.trim()) return;
-    setIsLoading(true);
-    try {
-      const res = await fetch(`/api/search?word=${encodeURIComponent(kw)}`);
-      const data = await res.json();
-      setResults(data.slice(1));
-    } catch (err) {
-      console.error("検索失敗:", err);
-      setResults([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // 📊 ランキング取得（ジャンル切り替え対応）
-  useEffect(() => {
-    async function fetchRanking() {
-      try {
-        const res = await fetch(`/api/ranking?genre=${genre}`);
-        if (!res.ok) throw new Error("API呼び出し失敗");
-        const data = await res.json();
-        setRanking(data);
-      } catch (err) {
-        console.error("ランキング取得エラー:", err);
-      }
-    }
-
-    fetchRanking();
-  }, [genre]); // ← 🔥ジャンルが変更されるたびに再取得！
-
-  // 🔘 ジャンル選択ボタン（表示）
   const genreList = [
     { label: "総合", value: "" },
     { label: "ファンタジー", value: "gf" },
@@ -51,73 +19,110 @@ export default function HomePage() {
     { label: "ホラー", value: "gho" },
   ];
 
+  useEffect(() => {
+    async function fetchRanking() {
+      setIsLoading(true);
+      try {
+        const url = `/api/ranking?genre=${genre}&page=${page}`;
+        console.log("📡 リクエストURL:", url); // ← 追加：確認用
+
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("API呼び出し失敗");
+        const data = await res.json();
+        setRanking(data.items);
+        setAllcount(data.allcount);
+      } catch (err) {
+        console.error("ランキング取得エラー:", err);
+        setRanking([]);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchRanking();
+  }, [genre, page]);
+
+  const maxPage = Math.ceil(allcount / 50);
+
   return (
-    <>
-      <NavBar onSearch={handleSearch} />
-      <main className="max-w-2xl mx-auto p-6 space-y-6">
-        {/* 🔘 ジャンル選択 */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          {genreList.map((g) => (
-            <button
-              key={g.value}
-              className={`px-3 py-1 rounded border ${
-                genre === g.value ? "bg-blue-500 text-white" : "bg-gray-100"
-              }`}
-              onClick={() => setGenre(g.value)}
+    <main className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="flex flex-wrap gap-2 mb-4">
+        {genreList.map((g) => (
+          <button
+            key={g.value}
+            onClick={() => {
+              setGenre(g.value);
+              setPage(1);
+            }}
+            className={`px-4 py-2 rounded-full border text-sm ${
+              genre === g.value
+                ? "bg-blue-600 text-white"
+                : "bg-gray-100 hover:bg-gray-200"
+            }`}
+          >
+            {g.label}
+          </button>
+        ))}
+      </div>
+
+      {isLoading && <p className="text-gray-500">読み込み中...</p>}
+
+      <h2 className="text-2xl font-bold border-b pb-2">
+        📊 小説家になろう 評価順ランキング（
+        {genreList.find((g) => g.value === genre)?.label || "総合"}） Page{" "}
+        {page}
+      </h2>
+
+      <ul className="grid sm:grid-cols-1 md:grid-cols-2 gap-4">
+        {ranking.map((item) => (
+          <li
+            key={item.rank}
+            className="bg-white border p-4 rounded shadow hover:shadow-md transition"
+          >
+            <div className="text-sm text-gray-500 mb-1">#{item.rank}</div>
+            <Link
+              href={`/summary/${item.ncode}`}
+              className="text-blue-600 text-base font-semibold hover:underline"
             >
-              {g.label}
-            </button>
-          ))}
-        </div>
+              {item.title}
+            </Link>
+            <p className="text-sm text-gray-700 mt-1 line-clamp-3">
+              {item.story}
+            </p>
+            <div className="text-xs text-gray-400 mt-2">
+              評価pt：{item.pt.toLocaleString()}pt
+            </div>
+          </li>
+        ))}
+      </ul>
 
-        {/* 🔍 検索結果 */}
-        {isLoading && <p className="text-gray-500">検索中...</p>}
-        {results.length > 0 && (
-          <>
-            <h2 className="text-xl font-bold mt-4 mb-2">🔎 検索結果</h2>
-            <ul className="space-y-4">
-              {results.map((novel) => (
-                <li
-                  key={novel.ncode}
-                  className="bg-gray-100 p-4 rounded shadow"
-                >
-                  <h3 className="font-bold">
-                    <Link
-                      href={`/summary/${novel.ncode}`}
-                      className="text-blue-600 underline text-sm"
-                    >
-                      {novel.title}
-                    </Link>
-                  </h3>
-                  <p className="text-sm text-gray-700 line-clamp-2">
-                    {novel.story}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
+      <div className="flex justify-center gap-4 mt-6">
+        <button
+          disabled={page === 1}
+          onClick={() => setPage((p) => p - 1)}
+          className={`px-4 py-2 rounded border ${
+            page === 1
+              ? "bg-gray-200 text-gray-400"
+              : "bg-white hover:bg-gray-100"
+          }`}
+        >
+          ← 前へ
+        </button>
 
-        {/* 📊 ランキング */}
-        <h2 className="text-xl font-bold mt-8 mb-2">
-          📊 小説家になろう・週間ランキング（
-          {genreList.find((g) => g.value === genre)?.label}）
-        </h2>
-        <ul className="space-y-2">
-          {ranking.map((item) => (
-            <li key={item.rank} className="bg-white border p-3 rounded shadow">
-              <span className="font-bold">#{item.rank}</span>：
-              <Link
-                href={`/summary/${item.ncode}`}
-                className="text-blue-600 underline ml-2"
-              >
-                {item.title}
-              </Link>
-              <span className="text-sm text-gray-500">（{item.pt}pt）</span>
-            </li>
-          ))}
-        </ul>
-      </main>
-    </>
+        <span className="px-4 py-2 text-sm font-semibold">Page {page}</span>
+
+        <button
+          disabled={page >= maxPage}
+          onClick={() => setPage((p) => p + 1)}
+          className={`px-4 py-2 rounded border ${
+            page >= maxPage
+              ? "bg-gray-200 text-gray-400"
+              : "bg-white hover:bg-gray-100"
+          }`}
+        >
+          次へ →
+        </button>
+      </div>
+    </main>
   );
 }
