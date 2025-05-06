@@ -24,7 +24,7 @@ export default function HomePage() {
       setIsLoading(true);
       try {
         const url = `/api/ranking?genre=${genre}&page=${page}`;
-        console.log("📡 リクエストURL:", url); // ← 追加：確認用
+        console.log("📡 リクエストURL:", url);
 
         const res = await fetch(url);
         if (!res.ok) throw new Error("API呼び出し失敗");

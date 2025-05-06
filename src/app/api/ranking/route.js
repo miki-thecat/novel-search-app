@@ -26,7 +26,7 @@ export async function GET(req) {
 
     const apiURL = `https://api.syosetu.com/novelapi/api/?out=json&order=hyoka&lim=${lim}&start=${start}${
       biggenre ? `&biggenre=${biggenre}` : ""
-    }`;
+    }&of=t-n-s-gp`;
 
     const res = await fetch(apiURL);
     if (!res.ok) {
