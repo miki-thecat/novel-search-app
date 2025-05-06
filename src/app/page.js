@@ -1,134 +1,128 @@
-"use client"; // クライアント側で実行するために必要（useStateなどを使うため）
+// ✅ page.js（ジャンル切替＋ページネーション＋あらすじ表示＋URL確認）
+"use client";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 
-import { useState } from "react";
+export default function HomePage() {
+  const [ranking, setRanking] = useState([]);
+  const [allcount, setAllcount] = useState(0);
+  const [genre, setGenre] = useState("");
+  const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
 
-export default function SummarySharePage() {
-  // 投稿された要約リストを保持する状態
-  const [summaries, setSummaries] = useState([]);
+  const genreList = [
+    { label: "総合", value: "" },
+    { label: "ファンタジー", value: "gf" },
+    { label: "恋愛", value: "gr" },
+    { label: "SF", value: "gsf" },
+    { label: "現代", value: "gmod" },
+    { label: "ホラー", value: "gho" },
+  ];
 
-  // フォーム入力値（話数・投稿者名・要約テキスト）
-  const [startChapter, setStartChapter] = useState("");
-  const [endChapter, setEndChapter] = useState("");
-  const [userName, setUserName] = useState("");
-  const [summaryText, setSummaryText] = useState("");
+  useEffect(() => {
+    async function fetchRanking() {
+      setIsLoading(true);
+      try {
+        const url = `/api/ranking?genre=${genre}&page=${page}`;
+        console.log("📡 リクエストURL:", url);
 
-  // フォームが送信されたときの処理
-  const handleSubmit = (e) => {
-    e.preventDefault();
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("API呼び出し失敗");
+        const data = await res.json();
+        setRanking(data.items);
+        setAllcount(data.allcount);
+      } catch (err) {
+        console.error("ランキング取得エラー:", err);
+        setRanking([]);
+      } finally {
+        setIsLoading(false);
+      }
+    }
 
-    // 新しい投稿オブジェクトを作成
-    const newSummary = {
-      id: Date.now(), // 一意のID（タイムスタンプ）
-      start: startChapter,
-      end: endChapter,
-      user: userName,
-      text: summaryText,
-    };
+    fetchRanking();
+  }, [genre, page]);
 
-    // 投稿をリストに追加（最新を上に）
-    setSummaries([newSummary, ...summaries]);
-
-    // 入力欄をリセット
-    setStartChapter("");
-    setEndChapter("");
-    setUserName("");
-    setSummaryText("");
-  };
+  const maxPage = Math.ceil(allcount / 50);
 
   return (
-    <main className="max-w-2xl mx-auto p-6">
-      {/* ページタイトル */}
-      <h1 className="text-2xl font-bold mb-4">📚 小説要約共有ページ</h1>
-      <p className="text-gray-700 mb-6">
-        仮の小説タイトル：<strong>冥王様が通るのですよ！</strong>
-      </p>
+    <main className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="flex flex-wrap gap-2 mb-4">
+        {genreList.map((g) => (
+          <button
+            key={g.value}
+            onClick={() => {
+              setGenre(g.value);
+              setPage(1);
+            }}
+            className={`px-4 py-2 rounded-full border text-sm ${
+              genre === g.value
+                ? "bg-blue-600 text-white"
+                : "bg-gray-100 hover:bg-gray-200"
+            }`}
+          >
+            {g.label}
+          </button>
+        ))}
+      </div>
 
-      {/* 要約投稿フォーム */}
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-4 bg-gray-50 p-4 rounded shadow"
-      >
-        {/* 話数範囲入力 */}
-        <div>
-          <label className="block text-sm font-medium">
-            範囲（何話〜何話）
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="number"
-              placeholder="開始話"
-              className="border p-2 rounded w-1/2"
-              value={startChapter}
-              onChange={(e) => setStartChapter(e.target.value)}
-              required
-            />
-            <input
-              type="number"
-              placeholder="終了話"
-              className="border p-2 rounded w-1/2"
-              value={endChapter}
-              onChange={(e) => setEndChapter(e.target.value)}
-              required
-            />
-          </div>
-        </div>
+      {isLoading && <p className="text-gray-500">読み込み中...</p>}
 
-        {/* 投稿者名入力 */}
-        <div>
-          <label className="block text-sm font-medium">投稿者名</label>
-          <input
-            type="text"
-            className="border p-2 rounded w-full"
-            placeholder="例：ミキ"
-            value={userName}
-            onChange={(e) => setUserName(e.target.value)}
-            required
-          />
-        </div>
+      <h2 className="text-2xl font-bold border-b pb-2">
+        📊 小説家になろう 評価順ランキング（
+        {genreList.find((g) => g.value === genre)?.label || "総合"}） Page{" "}
+        {page}
+      </h2>
 
-        {/* 要約テキスト入力 */}
-        <div>
-          <label className="block text-sm font-medium">要約テキスト</label>
-          <textarea
-            rows="4"
-            className="border p-2 rounded w-full"
-            placeholder="本文の要約を書いてください..."
-            value={summaryText}
-            onChange={(e) => setSummaryText(e.target.value)}
-            required
-          />
-        </div>
+      <ul className="grid sm:grid-cols-1 md:grid-cols-2 gap-4">
+        {ranking.map((item) => (
+          <li
+            key={item.rank}
+            className="bg-white border p-4 rounded shadow hover:shadow-md transition"
+          >
+            <div className="text-sm text-gray-500 mb-1">#{item.rank}</div>
+            <Link
+              href={`/summary/${item.ncode}`}
+              className="text-blue-600 text-base font-semibold hover:underline"
+            >
+              {item.title}
+            </Link>
+            <p className="text-sm text-gray-700 mt-1 line-clamp-3">
+              {item.story}
+            </p>
+            <div className="text-xs text-gray-400 mt-2">
+              評価pt：{item.pt.toLocaleString()}pt
+            </div>
+          </li>
+        ))}
+      </ul>
 
-        {/* 投稿ボタン */}
+      <div className="flex justify-center gap-4 mt-6">
         <button
-          type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          disabled={page === 1}
+          onClick={() => setPage((p) => p - 1)}
+          className={`px-4 py-2 rounded border ${
+            page === 1
+              ? "bg-gray-200 text-gray-400"
+              : "bg-white hover:bg-gray-100"
+          }`}
         >
-          投稿する
+          ← 前へ
         </button>
-      </form>
 
-      {/* 投稿された要約の一覧 */}
-      <section className="mt-8">
-        <h2 className="text-xl font-semibold mb-2">📝 投稿された要約</h2>
-        {summaries.length === 0 ? (
-          <p className="text-gray-500">まだ投稿はありません。</p>
-        ) : (
-          <ul className="space-y-4">
-            {summaries.map((summary) => (
-              <li
-                key={summary.id}
-                className="border rounded p-4 bg-white shadow"
-              >
-                <div className="text-sm text-gray-600 mb-1">
-                  第{summary.start}話〜{summary.end}話・投稿者：{summary.user}
-                </div>
-                <div>{summary.text}</div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+        <span className="px-4 py-2 text-sm font-semibold">Page {page}</span>
+
+        <button
+          disabled={page >= maxPage}
+          onClick={() => setPage((p) => p + 1)}
+          className={`px-4 py-2 rounded border ${
+            page >= maxPage
+              ? "bg-gray-200 text-gray-400"
+              : "bg-white hover:bg-gray-100"
+          }`}
+        >
+          次へ →
+        </button>
+      </div>
     </main>
   );
 }
